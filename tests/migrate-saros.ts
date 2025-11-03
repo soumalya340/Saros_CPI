@@ -154,10 +154,10 @@ describe("migrate-saros: Initialize Pool", () => {
   });
 
   it("Initializes a Saros pool", async () => {
-    console.log("\n📊 Initializing Saros Pool...\n");
+    console.log("\nInitializing Saros Pool...\n");
 
     // ==========================================
-    // STEP 1: Create Pool Account (Simple Keypair!) 🔑
+    // STEP 1: Create Pool Account (Regular Keypair!)
     // ==========================================
     console.log("1. Creating Pool Account (Regular Keypair)");
 
@@ -198,7 +198,7 @@ describe("migrate-saros: Initialize Pool", () => {
     // ==========================================
     // STEP 4: Create Pool Token Vaults
     // ==========================================
-    console.log("\n4. Creating pool token vaults");
+    console.log("\n4.Creating pool token vaults");
 
     // Create pool's Token A vault
     const tokenAVaultAccount = await getOrCreateAssociatedTokenAccount(
@@ -209,7 +209,7 @@ describe("migrate-saros: Initialize Pool", () => {
       true // Allow owner off curve for PDA
     );
     tokenAVault = tokenAVaultAccount.address;
-    console.log(`   Token A Vault: ${tokenAVault.toString()}`);
+    console.log(`Token A Vault: ${tokenAVault.toString()}`);
 
     // Create pool's Token B vault
     const tokenBVaultAccount = await getOrCreateAssociatedTokenAccount(
@@ -220,12 +220,12 @@ describe("migrate-saros: Initialize Pool", () => {
       true // Allow owner off curve for PDA
     );
     tokenBVault = tokenBVaultAccount.address;
-    console.log(`   Token B Vault: ${tokenBVault.toString()}`);
+    console.log(`Token B Vault: ${tokenBVault.toString()}`);
 
     // ==========================================
     // STEP 5: Transfer initial liquidity
     // ==========================================
-    console.log("\n5. Transferring initial liquidity to vaults");
+    console.log("\n5.Transferring initial liquidity to vaults");
 
     await transfer(
       provider.connection,
@@ -235,9 +235,7 @@ describe("migrate-saros: Initialize Pool", () => {
       payer.publicKey,
       INITIAL_TOKEN_A_AMOUNT
     );
-    console.log(
-      `   Transferred ${INITIAL_TOKEN_A_AMOUNT / LAMPORTS_PER_SOL} SOL`
-    );
+    console.log(`Transferred ${INITIAL_TOKEN_A_AMOUNT / LAMPORTS_PER_SOL} SOL`);
 
     await transfer(
       provider.connection,
@@ -248,13 +246,13 @@ describe("migrate-saros: Initialize Pool", () => {
       INITIAL_TOKEN_B_AMOUNT
     );
     console.log(
-      `   Transferred ${INITIAL_TOKEN_B_AMOUNT / LAMPORTS_PER_SOL} Token B`
+      `Transferred ${INITIAL_TOKEN_B_AMOUNT / LAMPORTS_PER_SOL} Token B`
     );
 
     // ==========================================
     // STEP 6: Create Fee and LP Accounts
     // ==========================================
-    console.log("\n6. Creating fee and LP accounts");
+    console.log("\n6.Creating fee and LP accounts");
 
     const feeAccountInfo = await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -263,7 +261,7 @@ describe("migrate-saros: Initialize Pool", () => {
       new PublicKey("FDbLZ5DRo61queVRH9LL1mQnsiAoubQEnoCRuPEmH9M8")
     );
     feeAccount = feeAccountInfo.address;
-    console.log(`   Fee Account: ${feeAccount.toString()}`);
+    console.log(`Fee Account: ${feeAccount.toString()}`);
 
     const userLpAccountInfo = await getOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -278,7 +276,7 @@ describe("migrate-saros: Initialize Pool", () => {
     // STEP 7: Create Pool Account and Call Initialize via CPI
     // ==========================================
     console.log(
-      "\n📞 Creating pool account and calling initialize_saros_pool via CPI...\n"
+      "\nCreating pool account and calling initialize_saros_pool via CPI...\n"
     );
 
     try {
@@ -337,6 +335,22 @@ describe("migrate-saros: Initialize Pool", () => {
         poolLpMint.publicKey
       );
       console.log(`   LP Supply: ${lpMintInfo.supply.toString()}`);
+      // Get vault balances
+      const tokenAVaultInfo = await getAccount(
+        provider.connection,
+        tokenAVault
+      );
+      const tokenBVaultInfo = await getAccount(
+        provider.connection,
+        tokenBVault
+      );
+
+      console.log(
+        `Token A Vault Balance: ${tokenAVaultInfo.amount.toString()}`
+      );
+      console.log(
+        `Token B Vault Balance: ${tokenBVaultInfo.amount.toString()}`
+      );
     } catch (error) {
       console.error("❌ Error:", error);
       throw error;
