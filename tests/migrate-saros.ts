@@ -180,6 +180,16 @@ describe("migrate-saros: Initialize Pool", () => {
     poolLpMint = Keypair.fromSeed(poolAuthority.toBuffer().slice(0, 32));
     console.log(`   LP Mint: ${poolLpMint.publicKey.toString()}`);
 
+    // Create the mint using the deterministic keypair
+    await createMint(
+      provider.connection,
+      payer.payer,
+      poolAuthority, // Mint authority is the pool authority
+      null, // No freeze authority
+      9, // 9 decimals
+      poolLpMint // Use our deterministic keypair
+    );
+    console.log(`LP Mint created`);
     // ==========================================
     // STEP 4: Create Pool Token Vaults
     // ==========================================
@@ -273,8 +283,8 @@ describe("migrate-saros: Initialize Pool", () => {
           poolAccount: poolAccount.publicKey,
           poolAuthority: poolAuthority,
           poolLpMint: poolLpMint.publicKey,
-          tokenAInfo: tokenAMint, // Token A mint address
-          tokenBInfo: tokenBMint, // Token B mint address
+          tokenAInfo: tokenAVault, // Token A vault (TokenAccount)
+          tokenBInfo: tokenBVault, // Token B vault (TokenAccount)
           feeAccount: feeAccount,
           userLpAccount: userLpAccount
         })
@@ -294,13 +304,7 @@ describe("migrate-saros: Initialize Pool", () => {
       console.log(`   LP Supply: ${lpMintInfo.supply.toString()}`);
 
     } catch (error) {
-      console.error("❌ Error:", error);
-      
-      if (error.logs) {
-        console.log("\n📜 Transaction logs:");
-        error.logs.forEach(log => console.log(log));
-      }
-      
+      console.error("❌ Error:", error);      
       throw error;
     }
   });

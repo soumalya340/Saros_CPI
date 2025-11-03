@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token},
+    token::{Token, TokenAccount},
 };
 use saros; // Import the Saros wrapper
 
@@ -93,11 +93,15 @@ pub struct InitializeSarosPool<'info> {
     #[account(mut)]
     pub pool_lp_mint: Signer<'info>,
 
-    /// Token A mint address
-    pub token_a_info: Account<'info, Mint>,
+    /// Token A vault (TokenAccount owned by pool authority)
+    /// CHECK: Validated by Saros program, must be Token account
+    #[account(mut)]
+    pub token_a_info: UncheckedAccount<'info>,
 
-    /// Token B mint address
-    pub token_b_info: Account<'info, Mint>,
+    /// Token B vault (TokenAccount owned by pool authority)
+    /// CHECK: Validated by Saros program, must be Token account
+    #[account(mut)]
+    pub token_b_info: UncheckedAccount<'info>,
 
     /// Fee collection account (ATA of fee owner for LP mint)
     /// Derivation: get_associated_token_address(fee_owner, pool_lp_mint)
