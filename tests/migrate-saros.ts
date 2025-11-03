@@ -279,16 +279,16 @@ describe("migrate-saros: Initialize Pool", () => {
           Array.from(CURVE_PARAMETERS)
         )
         .accounts({
-          payer: payer.publicKey,
-          poolAccount: poolAccount.publicKey,
-          poolAuthority: poolAuthority,
-          poolLpMint: poolLpMint.publicKey,
+          payer: payer.publicKey, //Payer who's paying for the transaction
+          poolAccount: poolAccount.publicKey, //Pool Account (PDA)
+          poolAuthority: poolAuthority, //Pool Authority (PDA)
+          poolLpMint: poolLpMint.publicKey, //Lp Pool Mint (PDA)
           tokenAInfo: tokenAVault, // Token A vault (TokenAccount)
           tokenBInfo: tokenBVault, // Token B vault (TokenAccount)
-          feeAccount: feeAccount,
-          userLpAccount: userLpAccount
+          feeAccount: feeAccount, //Fee Account (PDA) where fees are collected from the pool
+          userLpAccount: userLpAccount //User LP Account (PDA) where user's LP tokens are stored
         })
-        .signers([poolAccount, poolLpMint])
+        .signers([poolAccount, poolLpMint]) //Signers for the transaction
         .rpc();
 
       console.log("✅ Transaction successful!");
