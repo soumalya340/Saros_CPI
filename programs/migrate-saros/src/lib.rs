@@ -77,9 +77,9 @@ pub struct InitializeSarosPool<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    /// The pool account (must be a signer)
-    /// This is created from: Keypair::from_seed(PDA_seed)
-    /// where PDA_seed = find_program_address([random_keypair], saros_program)
+    /// The pool account (must be a signer and owned by Saros program)
+    /// This is created externally and must be owned by the Saros program
+    /// CHECK: This account is validated by the Saros program during CPI call
     #[account(mut)]
     pub pool_account: Signer<'info>,
 

@@ -44,7 +44,9 @@ describe("migrate-saros: Initialize Pool", () => {
   const CURVE_TYPE = 0; // Constant product
   const CURVE_PARAMETERS = Buffer.alloc(32); // 32-byte buffer for swap_calculator parameter
 
-  const sarosProgram = new PublicKey("SSwapUtytfBdBn1b9NUGG6foMVPtcWgpRU32HToDUZr");
+  const sarosProgram = new PublicKey(
+    "SSwapUtytfBdBn1b9NUGG6foMVPtcWgpRU32HToDUZr"
+  );
 
   let tokenAMint: PublicKey;
   let tokenBMint: PublicKey;
@@ -73,7 +75,7 @@ describe("migrate-saros: Initialize Pool", () => {
       NATIVE_MINT,
       wallet.publicKey
     );
-    
+
     if (amountInSol > 0) {
       const tx = new Transaction().add(
         SystemProgram.transfer({
@@ -83,10 +85,10 @@ describe("migrate-saros: Initialize Pool", () => {
         }),
         createSyncNativeInstruction(associatedTokenAccount.address)
       );
-  
+
       await sendAndConfirmTransaction(connection, tx, [wallet]);
     }
-  
+
     return associatedTokenAccount.address;
   }
 
@@ -97,7 +99,7 @@ describe("migrate-saros: Initialize Pool", () => {
     // STEP 1: Set up Token Mints
     // ==========================================
     console.log("1. Setting up tokens...");
-    
+
     tokenAMint = NATIVE_MINT;
     console.log(`Token A (WSOL): ${tokenAMint.toString()}`);
 
@@ -121,11 +123,15 @@ describe("migrate-saros: Initialize Pool", () => {
     // STEP 2: Create User Token Accounts
     // ==========================================
     console.log("\n3. Creating user token accounts...");
-    
+
     const wsolAmount = 20; // 20 SOL total
-    userTokenAAccount = await wrapSol(provider.connection, payer.payer, wsolAmount);
+    userTokenAAccount = await wrapSol(
+      provider.connection,
+      payer.payer,
+      wsolAmount
+    );
     console.log(`User WSOL Account: ${userTokenAAccount.toString()}`);
-    
+
     const tokenBAccountInfo = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       payer.payer,
@@ -154,16 +160,15 @@ describe("migrate-saros: Initialize Pool", () => {
     // STEP 1: Create Pool Account (Simple Keypair!) 🔑
     // ==========================================
     console.log("1. Creating Pool Account (Regular Keypair)");
-    
+
     // IMPORTANT: Just generate a regular keypair for the pool!
     poolAccount = Keypair.generate();
     console.log(`   Pool Account: ${poolAccount.publicKey.toString()}`);
-
     // ==========================================
     // STEP 2: Derive Pool Authority from Pool Account
     // ==========================================
     console.log("\n2. Deriving Pool Authority (PDA)");
-    
+
     // This IS a PDA, derived from the pool account using Saros program
     [poolAuthority] = PublicKey.findProgramAddressSync(
       [poolAccount.publicKey.toBuffer()],
@@ -175,9 +180,9 @@ describe("migrate-saros: Initialize Pool", () => {
     // STEP 3: Create LP Mint from Authority bytes
     // ==========================================
     console.log("\n3. Creating LP Mint from Authority");
-    
+
     // Create deterministic keypair from authority bytes
-    poolLpMint = Keypair.fromSeed(poolAuthority.toBuffer().slice(0, 32));
+    poolLpMint = Keypair.fromSeed(poolAuthority.toBuffer());
     console.log(`   LP Mint: ${poolLpMint.publicKey.toString()}`);
 
     // Create the mint using the deterministic keypair
@@ -186,7 +191,7 @@ describe("migrate-saros: Initialize Pool", () => {
       payer.payer,
       poolAuthority, // Mint authority is the pool authority
       null, // No freeze authority
-      9, // 9 decimals
+      6, // 6 decimals (Saros standard)
       poolLpMint // Use our deterministic keypair
     );
     console.log(`LP Mint created`);
@@ -230,7 +235,9 @@ describe("migrate-saros: Initialize Pool", () => {
       payer.publicKey,
       INITIAL_TOKEN_A_AMOUNT
     );
-    console.log(`   Transferred ${INITIAL_TOKEN_A_AMOUNT / LAMPORTS_PER_SOL} SOL`);
+    console.log(
+      `   Transferred ${INITIAL_TOKEN_A_AMOUNT / LAMPORTS_PER_SOL} SOL`
+    );
 
     await transfer(
       provider.connection,
@@ -240,18 +247,20 @@ describe("migrate-saros: Initialize Pool", () => {
       payer.publicKey,
       INITIAL_TOKEN_B_AMOUNT
     );
-    console.log(`   Transferred ${INITIAL_TOKEN_B_AMOUNT / LAMPORTS_PER_SOL} Token B`);
+    console.log(
+      `   Transferred ${INITIAL_TOKEN_B_AMOUNT / LAMPORTS_PER_SOL} Token B`
+    );
 
     // ==========================================
     // STEP 6: Create Fee and LP Accounts
     // ==========================================
     console.log("\n6. Creating fee and LP accounts");
-    
+
     const feeAccountInfo = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       payer.payer,
       poolLpMint.publicKey,
-      payer.publicKey // Fee owner is payer for this example
+      new PublicKey("FDbLZ5DRo61queVRH9LL1mQnsiAoubQEnoCRuPEmH9M8")
     );
     feeAccount = feeAccountInfo.address;
     console.log(`   Fee Account: ${feeAccount.toString()}`);
@@ -266,11 +275,25 @@ describe("migrate-saros: Initialize Pool", () => {
     console.log(`   User LP Account: ${userLpAccount.toString()}`);
 
     // ==========================================
-    // STEP 7: Call Initialize via CPI
+    // STEP 7: Create Pool Account and Call Initialize via CPI
     // ==========================================
-    console.log("\n📞 Calling initialize_saros_pool via CPI...\n");
+    console.log(
+      "\n📞 Creating pool account and calling initialize_saros_pool via CPI...\n"
+    );
 
     try {
+      // Create pool account in the same transaction as initialize
+      const rentExemptPool =
+        await provider.connection.getMinimumBalanceForRentExemption(324);
+
+      const createPoolIx = SystemProgram.createAccount({
+        fromPubkey: payer.publicKey,
+        newAccountPubkey: poolAccount.publicKey,
+        lamports: rentExemptPool,
+        space: 324, // Saros pool size
+        programId: sarosProgram,
+      });
+
       const tx = await program.methods
         .initializeSarosPool(
           TRADE_FEE_NUMERATOR,
@@ -285,16 +308,17 @@ describe("migrate-saros: Initialize Pool", () => {
           Array.from(CURVE_PARAMETERS)
         )
         .accounts({
-          payer: payer.publicKey, //Payer who's paying for the transaction
-          poolAccount: poolAccount.publicKey, //Pool Account (PDA)
-          poolAuthority: poolAuthority, //Pool Authority (PDA)
-          poolLpMint: poolLpMint.publicKey, //Lp Pool Mint (PDA)
-          tokenAInfo: tokenAVault, // Token A vault (TokenAccount)
-          tokenBInfo: tokenBVault, // Token B vault (TokenAccount)
-          feeAccount: feeAccount, //Fee Account (PDA) where fees are collected from the pool
-          userLpAccount: userLpAccount //User LP Account (PDA) where user's LP tokens are stored
+          payer: payer.publicKey,
+          poolAccount: poolAccount.publicKey,
+          poolAuthority: poolAuthority,
+          poolLpMint: poolLpMint.publicKey,
+          tokenAInfo: tokenAVault,
+          tokenBInfo: tokenBVault,
+          feeAccount: feeAccount,
+          userLpAccount: userLpAccount,
         })
-        .signers([poolAccount, poolLpMint]) //Signers for the transaction
+        .preInstructions([createPoolIx]) // Create pool account first
+        .signers([poolAccount, poolLpMint])
         .rpc();
 
       console.log("✅ Transaction successful!");
@@ -303,14 +327,18 @@ describe("migrate-saros: Initialize Pool", () => {
 
       // Verify
       console.log("📋 Verifying pool...");
-      const poolInfo = await provider.connection.getAccountInfo(poolAccount.publicKey);
+      const poolInfo = await provider.connection.getAccountInfo(
+        poolAccount.publicKey
+      );
       assert.ok(poolInfo, "Pool created");
-      
-      const lpMintInfo = await getMint(provider.connection, poolLpMint.publicKey);
-      console.log(`   LP Supply: ${lpMintInfo.supply.toString()}`);
 
+      const lpMintInfo = await getMint(
+        provider.connection,
+        poolLpMint.publicKey
+      );
+      console.log(`   LP Supply: ${lpMintInfo.supply.toString()}`);
     } catch (error) {
-      console.error("❌ Error:", error);      
+      console.error("❌ Error:", error);
       throw error;
     }
   });
