@@ -44,7 +44,7 @@ describe("migrate-saros: Initialize Pool", () => {
   const CURVE_TYPE = 0; // Constant product
   const CURVE_PARAMETERS = Buffer.alloc(32); // 32-byte buffer for swap_calculator parameter
 
-  const tokenProgram = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+  const sarosProgram = new PublicKey("SSwapUtytfBdBn1b9NUGG6foMVPtcWgpRU32HToDUZr");
 
   let tokenAMint: PublicKey;
   let tokenBMint: PublicKey;
@@ -167,7 +167,7 @@ describe("migrate-saros: Initialize Pool", () => {
     // This IS a PDA, derived from the pool account using Saros program
     [poolAuthority] = PublicKey.findProgramAddressSync(
       [poolAccount.publicKey.toBuffer()],
-      tokenProgram
+      sarosProgram
     );
     console.log(`   Pool Authority: ${poolAuthority.toString()}`);
 
