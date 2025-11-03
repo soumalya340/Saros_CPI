@@ -273,8 +273,8 @@ describe("migrate-saros: Initialize Pool", () => {
           poolAccount: poolAccount.publicKey,
           poolAuthority: poolAuthority,
           poolLpMint: poolLpMint.publicKey,
-          tokenAInfo: tokenAVault,
-          tokenBInfo: tokenBVault,
+          tokenAInfo: tokenAMint, // Token A mint address
+          tokenBInfo: tokenBMint, // Token B mint address
           feeAccount: feeAccount,
           userLpAccount: userLpAccount
         })
