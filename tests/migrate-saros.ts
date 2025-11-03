@@ -243,20 +243,26 @@ describe("migrate-saros: Initialize Pool", () => {
     console.log(`   Transferred ${INITIAL_TOKEN_B_AMOUNT / LAMPORTS_PER_SOL} Token B`);
 
     // ==========================================
-    // STEP 6: Derive Fee and LP Accounts
+    // STEP 6: Create Fee and LP Accounts
     // ==========================================
-    console.log("\n6. Setting up fee and LP accounts");
+    console.log("\n6. Creating fee and LP accounts");
     
-    feeAccount = anchor.utils.token.associatedAddress({
-      mint: poolLpMint.publicKey,
-      owner: payer.publicKey,
-    });
+    const feeAccountInfo = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      payer.payer,
+      poolLpMint.publicKey,
+      payer.publicKey // Fee owner is payer for this example
+    );
+    feeAccount = feeAccountInfo.address;
     console.log(`   Fee Account: ${feeAccount.toString()}`);
 
-    userLpAccount = anchor.utils.token.associatedAddress({
-      mint: poolLpMint.publicKey,
-      owner: payer.publicKey,
-    });
+    const userLpAccountInfo = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      payer.payer,
+      poolLpMint.publicKey,
+      payer.publicKey
+    );
+    userLpAccount = userLpAccountInfo.address;
     console.log(`   User LP Account: ${userLpAccount.toString()}`);
 
     // ==========================================

@@ -96,12 +96,12 @@ pub struct InitializeSarosPool<'info> {
     /// Token A vault (TokenAccount owned by pool authority)
     /// CHECK: Validated by Saros program, must be Token account
     #[account(mut)]
-    pub token_a_info: UncheckedAccount<'info>,
+    pub token_a_info: Account<'info, TokenAccount>,
 
     /// Token B vault (TokenAccount owned by pool authority)
     /// CHECK: Validated by Saros program, must be Token account
     #[account(mut)]
-    pub token_b_info: UncheckedAccount<'info>,
+    pub token_b_info: Account<'info, TokenAccount>,
 
     /// Fee collection account (ATA of fee owner for LP mint)
     /// Derivation: get_associated_token_address(fee_owner, pool_lp_mint)
